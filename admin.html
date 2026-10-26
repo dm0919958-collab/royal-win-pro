@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master Admin Control - Royal Win Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { background-color: #030712; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+    .num-0 { background: linear-gradient(135deg, #ef4444 50%, #8b5cf6 50%); }
+    .num-5 { background: linear-gradient(135deg, #10b981 50%, #8b5cf6 50%); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #030712; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+  </style>
+</head>
+<body class="p-4 md:p-8 max-w-7xl mx-auto space-y-6 relative">
+
+  <!-- SECURITY AUTH MODAL -->
+  <div id="adminAuthModal" class="fixed inset-0 bg-[#020408]/95 backdrop-blur-2xl z-[9999] flex items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-slate-900 via-slate-900 to-[#030712] border border-indigo-500/40 p-8 rounded-[36px] w-full max-w-sm text-center shadow-[0_0_60px_rgba(79,70,229,0.25)] space-y-5">
+      <span class="px-4 py-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-full text-[10px] font-black uppercase tracking-widest shadow-inner">
+        🛡️ Ultra Security Gate
+      </span>
+      <div>
+        <h2 class="text-xl font-black text-white mt-2">Master Admin Access</h2>
+        <p class="text-xs text-slate-400 mt-1">Enter secure password to unlock control engine.</p>
+      </div>
+      
+      <input id="adminPassInput" type="password" placeholder="Enter Password..." class="w-full bg-[#03050a] border border-slate-800 rounded-2xl px-4 py-3.5 text-sm text-white text-center outline-none focus:border-indigo-500 font-mono tracking-widest shadow-inner" />
+      
+      <button onclick="verifyAdminPass()" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-600/40 active:scale-95 transition text-xs tracking-wider uppercase">
+        UNLOCK PANEL
+      </button>
+      <p id="passError" class="text-xs text-rose-400 font-bold hidden bg-rose-500/10 py-2 rounded-xl border border-rose-500/20">Incorrect Password! Redirecting...</p>
+    </div>
+  </div>
+
+  <script>
+    function verifyAdminPass() {
+      const val = document.getElementById('adminPassInput').value;
+      if (val === "Nesa4748") {
+        document.getElementById('adminAuthModal').style.display = 'none';
+      } else {
+        const err = document.getElementById('passError');
+        err.classList.remove('hidden');
+        setTimeout(() => { window.location.href = "/index.html"; }, 1500);
+      }
+    }
+  </script>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-r from-slate-900 via-[#0b101d] to-slate-900 border border-slate-800/80 rounded-[28px] p-6 flex flex-wrap justify-between items-center gap-4 shadow-2xl relative overflow-hidden">
+    <div class="absolute -right-16 -top-16 w-48 h-48 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative z-10">
+      <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Master Backoffice v2.0</span>
+      <h1 class="text-2xl font-black text-white mt-1.5">ROYAL WIN PRO • CONTROL ENGINE</h1>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 relative z-10">
+      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-slate-800 text-center shadow-inner">
+        <span class="text-[9px] text-slate-400 uppercase font-bold block">Total Users</span>
+        <span id="totalUsers" class="font-mono text-base font-black text-emerald-400">0</span>
+      </div>
+      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-slate-800 text-center shadow-inner">
+        <span class="text-[9px] text-slate-400 uppercase font-bold block">Colour Period</span>
+        <span id="adminPeriod" class="font-mono text-sm font-bold text-indigo-400">--</span>
+      </div>
+      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-slate-800 text-center shadow-inner">
+        <span class="text-[9px] text-slate-400 uppercase font-bold block">Colour Timer</span>
+        <span id="adminTimer" class="font-mono text-base font-black text-amber-400">00:30</span>
+      </div>
+      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-amber-500/30 text-center shadow-inner">
+        <span class="text-[9px] text-amber-400 uppercase font-bold block">✨ Kismat Timer</span>
+        <span id="adminKismatTimer" class="font-mono text-base font-black text-amber-400">02:30</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- SOCIAL LINKS MANAGER PANEL -->
+  <div class="bg-slate-900/90 border border-indigo-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div>
+        <h2 class="text-sm font-black text-indigo-400 uppercase tracking-wider">📢 Social Media Links Manager (Footer Menu)</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Update Telegram, YouTube, and Instagram links shown to users.</p>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-3">
+      <input id="adminTelegramInput" type="text" placeholder="Telegram URL" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-indigo-500" />
+      <input id="adminYoutubeInput" type="text" placeholder="YouTube URL" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-indigo-500" />
+      <input id="adminInstagramInput" type="text" placeholder="Instagram URL" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-indigo-500" />
+    </div>
+    <button onclick="updateSocialLinks()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow transition">Update Social Links</button>
+  </div>
+
+  <!-- GIFT CODE MANAGER PANEL -->
+  <div class="bg-slate-900/90 border border-emerald-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div>
+        <h2 class="text-sm font-black text-emerald-400 uppercase tracking-wider">🎁 Gift / Redeem Code Manager</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Create promo codes, set timers and track claims.</p>
+      </div>
+    </div>
+    
+    <div class="bg-[#03050a] border border-purple-500/30 rounded-2xl p-4 space-y-3">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-xs font-black text-purple-400">⚙️ Recharge Rule for Gift Codes</h3>
+          <p class="text-[11px] text-slate-400">When enabled, users must have an approved deposit to claim codes.</p>
+        </div>
+        <span id="conditionStatusBadge" class="px-3 py-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-full text-xs font-bold">STATUS: OFF (Free Claim)</span>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="toggleDepositRule(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">Enable Rule (Deposit Req)</button>
+        <button onclick="toggleDepositRule(false)" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">Disable Rule (Free)</button>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-5 gap-3 pt-1">
+      <input id="newGiftCodeInput" type="text" placeholder="Code (e.g. BONUS50)" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white uppercase font-mono outline-none focus:border-emerald-500" />
+      <input id="newGiftAmountInput" type="number" placeholder="Amount (₹)" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-emerald-500" />
+      <input id="newGiftMaxUsesInput" type="number" placeholder="Max Uses (People)" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-emerald-500" />
+      <input id="newGiftDurationInput" type="number" placeholder="Expiry Timer (Minutes)" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-emerald-500" />
+      <button onclick="createGiftCode()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow transition">Create Code</button>
+    </div>
+  </div>
+
+  <!-- GIFT CODE LIVE TRACKING & REDEEM MANAGER -->
+  <div class="bg-slate-900/90 border border-teal-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div>
+        <h2 class="text-sm font-black text-teal-400 uppercase tracking-wider">📊 Active Gift Codes & Redeem History</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Real-time tracking, live countdown timers, and user claims list.</p>
+      </div>
+    </div>
+    <div id="adminGiftCodesList" class="space-y-3 max-h-[420px] overflow-y-auto text-xs pr-1">
+      <p class="text-slate-500 text-center py-4">No active gift codes.</p>
+    </div>
+  </div>
+
+  <!-- KISMAT GAME CONTROL PANEL -->
+  <div class="bg-slate-900/90 border border-amber-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div>
+        <h2 class="text-sm font-black text-amber-400 uppercase tracking-wider">✨ KISMAT Game Live Control & Bets</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Kismat Period: <strong class="text-indigo-300 font-mono" id="adminKismatPeriod">--</strong></p>
+      </div>
+      <div class="flex gap-2">
+        <input id="forcedKismatOptionInput" type="number" min="1" max="10" placeholder="Win Option (1-10)" class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-amber-500" />
+        <button onclick="setForcedKismat()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">Force Win</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="adminKismatOptionsGrid"></div>
+  </div>
+
+  <!-- ROCKET GAME CONTROL & ROCKET LIVE BETS SIDE-BY-SIDE -->
+  <div class="grid lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-slate-900/90 border border-rose-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-sm font-black text-rose-400 uppercase tracking-wider">🚀 Rocket Crash Custom Controller</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Total Pool: <strong class="text-emerald-400 font-mono text-sm" id="adminTotalRocketPool">₹0</strong> | Claimed Out: <strong class="text-amber-400 font-mono text-sm" id="adminTotalRocketClaimed">₹0</strong></p>
+        </div>
+        <span id="adminRocketMult" class="font-mono text-2xl font-black text-emerald-400">1.00x</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="crashRocketNow()" class="bg-rose-600 hover:bg-rose-500 text-white font-black py-3.5 rounded-2xl shadow-lg active:scale-95 transition">
+          💥 CRASH ROCKET NOW!
+        </button>
+        <div class="flex gap-2">
+          <input id="customRocketXInput" type="number" step="0.1" placeholder="Ex: 5.50" class="w-full bg-[#03050a] border border-slate-800 rounded-2xl px-3 text-xs text-white outline-none focus:border-indigo-500" />
+          <button onclick="setCustomRocketX()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Set X</button>
+        </div>
+      </div>
+      <p id="nextRocketBanner" class="text-xs font-bold text-amber-400">Next Flight Mode: Auto / Random</p>
+    </div>
+
+    <div class="bg-slate-900/90 border border-rose-500/20 rounded-[28px] p-6 space-y-3 flex flex-col shadow-xl">
+      <h2 class="text-sm font-bold text-rose-400 uppercase tracking-wider border-b border-slate-800 pb-3">🚀 Live Rocket Bets (Sorted)</h2>
+      <div id="adminRocketBetsList" class="space-y-2 text-xs max-h-48 overflow-y-auto flex-1 pr-1">
+        <p class="text-slate-500 text-center py-4">No rocket bets right now.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLOUR TRADING CONTROL -->
+  <div class="bg-slate-900/90 border border-indigo-500/30 rounded-[28px] p-6 space-y-5 shadow-xl">
+    <div class="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+      <div>
+        <h2 class="text-base font-black text-white uppercase tracking-wider">🎨 Colour Trading Result Control Engine</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Click any colour or exact number below to force it as the winner.</p>
+      </div>
+      <div id="winnerBanner" class="bg-amber-500/20 border border-amber-400 text-amber-300 px-4 py-2 rounded-xl text-sm font-black">
+        Current Mode: Auto Profit
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="setMode('MIN_PAYOUT')" id="mode-MIN_PAYOUT" class="py-3 px-3 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800 transition">📉 Auto Profit (Active)</button>
+      <button onclick="setMode('MANUAL')" id="mode-MANUAL" class="py-3 px-3 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800 transition">🎯 Manual Override</button>
+    </div>
+
+    <div class="space-y-3">
+      <div class="grid grid-cols-3 gap-3">
+        <button onclick="forceColour('GREEN')" class="bg-gradient-to-b from-emerald-500 to-emerald-700 py-3.5 rounded-2xl font-black text-white shadow-lg transition">
+          FORCE GREEN <span class="block text-[10px] opacity-85 font-normal mt-0.5">Win 2x (₹<span id="stake-GREEN">0</span>)</span>
+        </button>
+        <button onclick="forceColour('VIOLET')" class="bg-gradient-to-b from-purple-500 to-purple-700 py-3.5 rounded-2xl font-black text-white shadow-lg transition">
+          FORCE VIOLET <span class="block text-[10px] opacity-85 font-normal mt-0.5">Win 4.5x (₹<span id="stake-VIOLET">0</span>)</span>
+        </button>
+        <button onclick="forceColour('RED')" class="bg-gradient-to-b from-rose-500 to-rose-700 py-3.5 rounded-2xl font-black text-white shadow-lg transition">
+          FORCE RED <span class="block text-[10px] opacity-85 font-normal mt-0.5">Win 2x (₹<span id="stake-RED">0</span>)</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-5 gap-2.5">
+        <button onclick="forceNum(0)" class="num-0 py-3.5 rounded-xl font-black text-white text-base shadow transition">0</button>
+        <button onclick="forceNum(1)" class="bg-emerald-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">1</button>
+        <button onclick="forceNum(2)" class="bg-rose-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">2</button>
+        <button onclick="forceNum(3)" class="bg-emerald-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">3</button>
+        <button onclick="forceNum(4)" class="bg-rose-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">4</button>
+        <button onclick="forceNum(5)" class="num-5 py-3.5 rounded-xl font-black text-white text-base shadow transition">5</button>
+        <button onclick="forceNum(6)" class="bg-rose-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">6</button>
+        <button onclick="forceNum(7)" class="bg-emerald-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">7</button>
+        <button onclick="forceNum(8)" class="bg-rose-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">8</button>
+        <button onclick="forceNum(9)" class="bg-emerald-600 py-3.5 rounded-xl font-black text-white text-base shadow transition">9</button>
+      </div>
+    </div>
+
+    <div id="numberGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
+  </div>
+
+  <!-- DEPOSIT & WITHDRAW REQUESTS WITH DELETE BUTTONS -->
+  <div class="space-y-6">
+    <div class="bg-slate-900/90 border border-emerald-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+      <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-black text-emerald-400 uppercase tracking-wider">📥 Deposit Requests</h3>
+        <input id="depositSearchInput" type="text" oninput="renderTransactions()" placeholder="🔍 Search Name/Phone..." class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white w-full sm:w-48 outline-none focus:border-emerald-500" />
+      </div>
+      <div id="depositList" class="space-y-2.5 text-xs max-h-80 overflow-y-auto pr-1"></div>
+    </div>
+
+    <div class="bg-slate-900/90 border border-amber-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+      <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-black text-amber-400 uppercase tracking-wider">📤 Withdrawal Requests (Bank & Details)</h3>
+        <input id="withdrawSearchInput" type="text" oninput="renderTransactions()" placeholder="🔍 Search Name/Phone..." class="bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white w-full sm:w-48 outline-none focus:border-amber-500" />
+      </div>
+      <div id="withdrawList" class="space-y-3 text-xs max-h-96 overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <!-- SUPPORT TICKETS WITH DELETE BUTTONS -->
+  <div class="bg-slate-900/90 border border-amber-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <h2 class="text-sm font-black text-amber-400 uppercase tracking-wider">💬 User Support Tickets</h2>
+      <span class="text-xs text-slate-400 font-mono">Realtime Support</span>
+    </div>
+    <div id="supportTicketsList" class="space-y-3 text-xs max-h-80 overflow-y-auto">
+      <p class="text-slate-500">No support requests.</p>
+    </div>
+  </div>
+
+  <!-- USERS DIRECTORY -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-[28px] p-6 space-y-4 shadow-xl">
+    <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
+      <div>
+        <h2 class="text-sm font-black text-emerald-400 uppercase tracking-wider">👥 Registered Users Directory</h2>
+        <p class="text-[11px] text-slate-400 mt-0.5">Search users, edit credentials, set balance or delete</p>
+      </div>
+      <input id="userSearchInput" type="text" oninput="renderUsersTable()" placeholder="🔍 Search Name/Phone..." class="w-full sm:w-48 bg-[#03050a] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-emerald-500" />
+    </div>
+
+    <div class="overflow-x-auto max-h-80">
+      <table class="w-full text-left text-xs">
+        <thead>
+          <tr class="text-slate-400 border-b border-slate-800">
+            <th class="pb-2.5">User ID</th>
+            <th class="pb-2.5">Name / Mobile</th>
+            <th class="pb-2.5">Password</th>
+            <th class="pb-2.5">Secret Code</th>
+            <th class="pb-2.5">Balance</th>
+            <th class="pb-2.5 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody" class="divide-y divide-slate-800/60"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let cachedUsers = [];
+    let cachedTransactions = [];
+    let cachedGiftCodes = [];
+
+    socket.emit('admin_init');
+
+    function createGiftCode() {
+      const code = document.getElementById('newGiftCodeInput').value.trim();
+      const amount = Number(document.getElementById('newGiftAmountInput').value);
+      const maxUses = Number(document.getElementById('newGiftMaxUsesInput').value);
+      const durationMinutes = Number(document.getElementById('newGiftDurationInput').value) || 0;
+      if (!code || !amount || !maxUses) return alert('Please fill all required gift code fields!');
+      socket.emit('admin_create_gift_code', { code, amount, maxUses, durationMinutes });
+      document.getElementById('newGiftCodeInput').value = '';
+      document.getElementById('newGiftAmountInput').value = '';
+      document.getElementById('newGiftMaxUsesInput').value = '';
+      document.getElementById('newGiftDurationInput').value = '';
+    }
+
+    function deleteAdminGiftCode(code) {
+      if (confirm(`Delete gift code ${code}?`)) {
+        socket.emit('admin_delete_gift_code', code);
+      }
+    }
+
+    function deleteTransaction(txId) {
+      if (confirm('Are you sure you want to delete this transaction record?')) {
+        socket.emit('admin_delete_transaction', txId);
+      }
+    }
+
+    function deleteSupportTicket(ticketId) {
+      if (confirm('Are you sure you want to delete this support ticket?')) {
+        socket.emit('admin_delete_ticket', ticketId);
+      }
+    }
+
+    function toggleDepositRule(status) {
+      socket.emit('admin_toggle_deposit_condition', status);
+      alert(status ? 'Recharge rule Enabled!' : 'Recharge rule Disabled!');
+    }
+
+    function updateSocialLinks() {
+      const telegram = document.getElementById('adminTelegramInput').value.trim();
+      const youtube = document.getElementById('adminYoutubeInput').value.trim();
+      const instagram = document.getElementById('adminInstagramInput').value.trim();
+      socket.emit('admin_update_socials', { telegram, youtube, instagram });
+      alert('Social links updated successfully!');
+    }
+
+    function setMode(m) { socket.emit('admin_set_mode', m); }
+    function forceNum(n) { socket.emit('admin_force_num', n); }
+    function forceColour(col) { socket.emit('admin_force_colour', col); }
+    function crashRocketNow() { socket.emit('admin_rocket_crash_now'); }
+    function setNextRocket(val) { socket.emit('admin_rocket_set_next', val); }
+    function setCustomRocketX() {
+      const val = document.getElementById('customRocketXInput').value;
+      if (!val) return alert('Please enter multiplier!');
+      setNextRocket(val);
+    }
+    
+    function setForcedKismat() {
+      const opt = document.getElementById('forcedKismatOptionInput').value;
+      if (!opt) return alert('Enter option 1 to 10');
+      socket.emit('admin_force_kismat', Number(opt));
+      alert(`Forced Kismat Winner Set to Option #${opt}`);
+    }
+
+    function deleteUser(phone) {
+      if (confirm('Delete this user?')) socket.emit('admin_delete_user', phone);
+    }
+
+    function setCustomBalance(phone) {
+      const val = prompt('Enter new custom balance (₹):');
+      if (val !== null && val.trim() !== '') socket.emit('admin_custom_balance', { phone, amount: Number(val) });
+    }
+
+    function editUserCredentials(phone, oldName, oldPass, oldSecret) {
+      const newName = prompt('Enter new Name:', oldName);
+      if (newName === null) return;
+      const newPass = prompt('Enter new Password:', oldPass);
+      if (newPass === null) return;
+      const newSecret = prompt('Enter new Secret Code:', oldSecret);
+      if (newSecret === null) return;
+
+      if (!newName.trim() || !newPass.trim() || !newSecret.trim()) {
+        return alert('Fields cannot be empty!');
+      }
+
+      socket.emit('admin_update_user_credentials', { 
+        phone, 
+        name: newName.trim(), 
+        password: newPass.trim(), 
+        secretCode: newSecret.trim() 
+      });
+    }
+
+    function processTx(txId, approve) { socket.emit('admin_process_tx', { txId, approve }); }
+    function resolveTicket(ticketId) { socket.emit('admin_resolve_ticket', ticketId); }
+
+    function adminReplyTicket(ticketId) {
+      const replyText = prompt('Enter reply for user:');
+      if (replyText && replyText.trim() !== '') {
+        socket.emit('admin_reply_ticket', { ticketId, reply: replyText.trim() });
+      }
+    }
+
+    socket.on('rocket_tick', (data) => {
+      const multEl = document.getElementById('adminRocketMult');
+      if (multEl) multEl.innerText = `${data.multiplier.toFixed(2)}x`;
+
+      const betsListEl = document.getElementById('adminRocketBetsList');
+      if (betsListEl) {
+        const bets = data.betsLiveReturn || [];
+        if (bets.length === 0) {
+          betsListEl.innerHTML = `<p class="text-slate-500 text-center py-4">No rocket bets right now.</p>`;
+        } else {
+          let currentMult = data.multiplier;
+          betsListEl.innerHTML = bets.map(b => {
+            let liveReturnAmt = (b.amount * currentMult).toFixed(2);
+            return `
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                <div>
+                  <strong class="text-white">${b.userName}</strong> <span class="text-emerald-400 font-mono">(${b.phone})</span>
+                  <span class="block text-[10px] text-slate-400">Bet: ₹${b.amount}</span>
+                </div>
+                <div class="text-right">
+                  ${b.cashedOut ? `
+                    <span class="font-bold text-xs text-emerald-400">Cashed Out</span>
+                    <span class="block text-[10px] text-emerald-300 font-mono">+₹${b.winAmount}</span>
+                  ` : `
+                    <span class="font-bold text-xs text-amber-400">LIVE RETURN</span>
+                    <span class="block text-[11px] text-amber-300 font-mono font-black">₹${liveReturnAmt}</span>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    });
+
+    socket.on('admin_update', ({ gameState, kismatState, rocketState, summary, transactions, supportTickets, usersList, totalRocketPool, totalRocketClaimed, giftCodes, socialLinks, depositConditionActive }) => {
+      cachedUsers = usersList || [];
+      cachedTransactions = transactions || [];
+      cachedGiftCodes = giftCodes || [];
+
+      if (socialLinks) {
+        document.getElementById('adminTelegramInput').value = socialLinks.telegram || '';
+        document.getElementById('adminYoutubeInput').value = socialLinks.youtube || '';
+        document.getElementById('adminInstagramInput').value = socialLinks.instagram || '';
+      }
+
+      if (depositConditionActive !== undefined) {
+        const badge = document.getElementById('conditionStatusBadge');
+        if (badge) {
+          badge.innerText = depositConditionActive ? 'STATUS: ON (Deposit Required)' : 'STATUS: OFF (Free Claim)';
+          badge.className = depositConditionActive ? 'px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold' : 'px-3 py-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-full text-xs font-bold';
+        }
+      }
+
+      document.getElementById('totalUsers').innerText = cachedUsers.length;
+      document.getElementById('adminPeriod').innerText = gameState.period;
+      document.getElementById('adminTimer').innerText = `00:${String(gameState.timeLeft).padStart(2, '0')}`;
+      
+      const totalPoolEl = document.getElementById('adminTotalRocketPool');
+      if(totalPoolEl) totalPoolEl.innerText = `₹${totalRocketPool || 0}`;
+
+      const totalClaimedEl = document.getElementById('adminTotalRocketClaimed');
+      if(totalClaimedEl) totalClaimedEl.innerText = `₹${totalRocketClaimed || 0}`;
+
+      if (summary && summary.stakes) {
+        document.getElementById('stake-GREEN').innerText = summary.stakes.GREEN || 0;
+        document.getElementById('stake-VIOLET').innerText = summary.stakes.VIOLET || 0;
+        document.getElementById('stake-RED').innerText = summary.stakes.RED || 0;
+
+        let numGridHtml = '';
+        for (let n = 0; n <= 9; n++) {
+          let nStake = summary.stakes[n] || 0;
+          numGridHtml += `
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center">
+              <span class="text-xs font-black text-indigo-300">Num #${n}</span>
+              <p class="text-[11px] text-emerald-400 font-mono mt-0.5">₹${nStake}</p>
+            </div>
+          `;
+        }
+        document.getElementById('numberGrid').innerHTML = numGridHtml;
+      }
+
+      const winBanner = document.getElementById('winnerBanner');
+      if (winBanner) {
+        winBanner.innerText = gameState.mode === 'MANUAL' ? `🎯 Manual Override (Num: ${gameState.forcedNumber !== null ? gameState.forcedNumber : '--'})` : '📉 Auto Profit Mode Active';
+        winBanner.className = gameState.mode === 'MANUAL' ? 'bg-rose-500/20 border border-rose-400 text-rose-300 px-4 py-2 rounded-xl text-sm font-black' : 'bg-amber-500/20 border border-amber-400 text-amber-300 px-4 py-2 rounded-xl text-sm font-black';
+      }
+
+      document.getElementById('mode-MIN_PAYOUT').className = gameState.mode === 'MIN_PAYOUT' ? 'py-3 px-3 rounded-xl text-xs font-bold border border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'py-3 px-3 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800';
+      document.getElementById('mode-MANUAL').className = gameState.mode === 'MANUAL' ? 'py-3 px-3 rounded-xl text-xs font-bold border border-rose-500 bg-rose-500/20 text-rose-300' : 'py-3 px-3 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800';
+
+      if (kismatState) {
+        document.getElementById('adminKismatPeriod').innerText = kismatState.period;
+        let kGrid = '';
+        for (let i = 1; i <= 10; i++) {
+          const stake = kismatState.stakes ? (kismatState.stakes[i] || 0) : 0;
+          kGrid += `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center"><span class="text-sm font-black text-amber-400">Opt #${i}</span><p class="text-xs text-slate-300 mt-1">₹${stake}</p></div>`;
+        }
+        document.getElementById('adminKismatOptionsGrid').innerHTML = kGrid;
+      }
+
+      const giftEl = document.getElementById('adminGiftCodesList');
+      if (giftEl) {
+        giftEl.innerHTML = (!cachedGiftCodes || cachedGiftCodes.length === 0)
+          ? `<p class="text-slate-500 text-center py-4">No active gift codes.</p>`
+          : cachedGiftCodes.map(g => {
+              let timeLeftStr = 'Unlimited / No Expiry';
+              if (g.expiresAt) {
+                const diff = new Date(g.expiresAt) - new Date();
+                if (diff <= 0) {
+                  timeLeftStr = 'Expired';
+                } else {
+                  const mins = Math.floor(diff / 60000);
+                  const secs = Math.floor((diff % 60000) / 1000);
+                  timeLeftStr = `${mins}m ${secs}s remaining`;
+                }
+              }
+              return `
+                <div class="bg-slate-950 p-4 rounded-xl border border-teal-500/30 space-y-3 shadow-md relative overflow-hidden">
+                  <div class="flex justify-between items-start">
+                    <div class="space-y-1">
+                      <div class="text-[10px] font-extrabold text-teal-400 uppercase tracking-widest">Code:</div>
+                      <div class="font-mono font-black text-white text-base bg-slate-900 px-3 py-1 rounded-lg border border-slate-800 inline-block">${g.code}</div>
+                      <span class="ml-2 px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg font-bold text-xs">₹${g.amount}</span>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                      <span class="text-amber-400 font-mono font-bold text-xs bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">Uses: ${g.usedCount} / ${g.maxUses}</span>
+                      <button onclick="deleteAdminGiftCode('${g.code}')" class="bg-rose-600 hover:bg-rose-500 px-3 py-1 rounded-lg text-white font-bold text-xs shadow">Delete Code</button>
+                    </div>
+                  </div>
+                  
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 border-t border-slate-900 pt-2 font-mono">
+                    <span>⏳ Expiry Countdown: <strong class="text-amber-400">${timeLeftStr}</strong></span>
+                  </div>
+
+                  <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-2 mt-2">
+                    <p class="text-[11px] uppercase font-black text-indigo-300 tracking-wider">👥 Redeemed Users History (${g.claims ? g.claims.length : 0}):</p>
+                    ${(!g.claims || g.claims.length === 0) ? `<p class="text-slate-500 text-[11px]">No users claimed this code yet.</p>` : g.claims.map(c => `
+                      <div class="flex justify-between items-center text-[11px] bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800/60">
+                        <div>
+                          <strong class="text-white">${c.userName}</strong> 
+                          <span class="text-indigo-400 font-mono text-[10px]">(${c.userId} • ${c.phone})</span>
+                        </div>
+                        <div class="text-right">
+                          <span class="text-emerald-400 font-bold">+₹${c.amount}</span>
+                          <span class="text-slate-400 text-[10px] block font-mono">${c.time}</span>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('');
+      }
+
+      const ticketEl = document.getElementById('supportTicketsList');
+      if (ticketEl) {
+        ticketEl.innerHTML = (!supportTickets || supportTickets.length === 0) 
+          ? `<p class="text-slate-500">No support requests.</p>` 
+          : supportTickets.map(t => `
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+              <div class="flex justify-between items-center">
+                <strong class="text-white">${t.userName}</strong> - <span class="text-emerald-400 font-mono font-bold">${t.phone}</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold ${t.status === 'RESOLVED' ? 'text-indigo-400' : 'text-amber-400'}">${t.status}</span>
+                  <button onclick="deleteSupportTicket(${t.id})" class="bg-rose-600 hover:bg-rose-500 px-2.5 py-1 rounded text-white font-bold text-[10px]">Delete</button>
+                </div>
+              </div>
+              <p class="text-slate-300">📝 Ticket: ${t.message}</p>
+              ${t.adminReply ? `<p class="text-indigo-300 font-semibold">👑 Admin Reply: ${t.adminReply}</p>` : ''}
+              <div class="flex gap-2 pt-1">
+                <button onclick="adminReplyTicket(${t.id})" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded text-white font-bold">Reply</button>
+                ${t.status === 'PENDING' ? `<button onclick="resolveTicket(${t.id})" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded font-bold text-slate-950">Resolve</button>` : ''}
+              </div>
+            </div>
+          `).join('');
+      }
+
+      renderUsersTable();
+      renderTransactions();
+    });
+
+    function renderUsersTable() {
+      const q = (document.getElementById('userSearchInput').value || '').trim().toLowerCase();
+      const filtered = cachedUsers.filter(u => (u.userId && u.userId.toLowerCase().includes(q)) || (u.name && u.name.toLowerCase().includes(q)) || (u.phone && u.phone.toLowerCase().includes(q)));
+      const uBody = document.getElementById('usersTableBody');
+      uBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="6" class="py-4 text-center text-slate-500">No users found.</td></tr>` : filtered.map(u => `
+        <tr>
+          <td class="py-2.5 font-mono text-indigo-400 font-bold">${u.userId}</td>
+          <td class="py-2.5"><strong class="text-white block">${u.name}</strong><span class="font-mono text-emerald-300 text-[11px]">${u.phone}</span></td>
+          <td class="py-2.5 font-mono text-amber-300 text-xs">${u.password}</td>
+          <td class="py-2.5 font-mono text-emerald-400 text-xs font-bold">${u.secretCode || '1234'}</td>
+          <td class="py-2.5 font-black text-amber-400">₹${u.balance.toFixed(2)}</td>
+          <td class="py-2.5 text-right space-x-1 whitespace-nowrap">
+            <button onclick="editUserCredentials('${u.phone}', '${u.name}', '${u.password}', '${u.secretCode || '1234'}')" class="bg-amber-600 px-2 py-1 rounded text-white font-bold">Edit</button>
+            <button onclick="setCustomBalance('${u.phone}')" class="bg-indigo-600 px-2 py-1 rounded text-white font-bold">Bal</button>
+            <button onclick="deleteUser('${u.phone}')" class="bg-rose-600 px-2 py-1 rounded text-white font-bold">Del</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderTransactions() {
+      const depQ = (document.getElementById('depositSearchInput').value || '').trim().toLowerCase();
+      const withQ = (document.getElementById('withdrawSearchInput').value || '').trim().toLowerCase();
+
+      const deps = cachedTransactions.filter(t => t.type === 'DEPOSIT' && (t.userName.toLowerCase().includes(depQ) || t.phone.toLowerCase().includes(depQ)));
+      const withs = cachedTransactions.filter(t => t.type === 'WITHDRAW' && (t.userName.toLowerCase().includes(withQ) || t.phone.toLowerCase().includes(withQ) || t.details.toLowerCase().includes(withQ)));
+
+      document.getElementById('depositList').innerHTML = deps.length === 0 ? `<p class="text-slate-500 text-center py-2">No deposits found.</p>` : deps.map(t => `
+        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div>
+            <span class="font-black text-emerald-400 text-sm">+₹${t.amount}</span> <strong class="text-white">${t.userName}</strong> <span class="text-emerald-300 font-mono">(${t.phone})</span>
+            <span class="block text-[11px] text-slate-400 font-mono mt-0.5">${t.details}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            ${t.status === 'PENDING' ? `
+              <div class="flex gap-1">
+                <button onclick="processTx(${t.id}, true)" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-white font-bold">Approve</button>
+                <button onclick="processTx(${t.id}, false)" class="bg-rose-600 hover:bg-rose-500 px-2.5 py-1.5 rounded-lg text-white font-bold">Reject</button>
+              </div>
+            ` : `<span class="font-bold text-xs px-2.5 py-1 rounded-lg ${t.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${t.status}</span>`}
+            <button onclick="deleteTransaction(${t.id})" class="bg-rose-600 hover:bg-rose-500 px-2 py-1.5 rounded-lg text-white font-bold text-[10px]">Delete</button>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('withdrawList').innerHTML = withs.length === 0 ? `<p class="text-slate-500 text-center py-2">No withdrawals found.</p>` : withs.map(t => `
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-amber-500/30 space-y-2">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="font-black text-amber-400 text-sm">Req: ₹${t.amount}</span> 
+              <strong class="text-white ml-2">${t.userName}</strong> 
+              <span class="text-emerald-300 font-mono text-xs">(${t.phone})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              ${t.status === 'PENDING' ? `
+                <div class="flex gap-1">
+                  <button onclick="processTx(${t.id}, true)" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-white font-bold">Approve</button>
+                  <button onclick="processTx(${t.id}, false)" class="bg-rose-600 hover:bg-rose-500 px-2.5 py-1.5 rounded-lg text-white font-bold">Reject</button>
+                </div>
+              ` : `<span class="font-bold text-xs px-2.5 py-1 rounded-lg ${t.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${t.status}</span>`}
+              <button onclick="deleteTransaction(${t.id})" class="bg-rose-600 hover:bg-rose-500 px-2 py-1.5 rounded-lg text-white font-bold text-[10px]">Delete</button>
+            </div>
+          </div>
+          <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-slate-300 font-mono text-[11px] space-y-0.5">
+            <p>🏦 <strong class="text-indigo-300">Bank/UPI Details:</strong> ${t.details}</p>
+            <p class="text-rose-300">📉 Tax Deduction (3%): ₹${t.tax || 0} | <span class="text-emerald-400 font-bold">Final Payout: ₹${(t.amount - (t.tax || 0)).toFixed(2)}</span></p>
+          </div>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
