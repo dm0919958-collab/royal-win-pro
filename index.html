@@ -137,10 +137,16 @@
           <div>
             <p class="text-[10px] uppercase tracking-widest text-indigo-300 font-extrabold">Total Balance</p>
             <h2 class="text-3xl font-black text-white mt-0.5 tracking-tight">₹<span id="userBalance">0.00</span></h2>
+            <!-- Alada Deposit ebong Winning Balance dekhabe -->
+            <div class="flex gap-3 mt-1.5 text-[10px] font-mono text-slate-400">
+              <span>Deposit: ₹<span id="userDepositBal">0.00</span></span>
+              <span>•</span>
+              <span class="text-emerald-400">Winning: ₹<span id="userWinningBal">0.00</span></span>
+            </div>
           </div>
           <div class="flex gap-2">
             <button onclick="document.getElementById('depositModal').classList.remove('hidden')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">+ Deposit</button>
-            <button onclick="document.getElementById('withdrawModal').classList.remove('hidden')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all">↑ Withdraw</button>
+            <button onclick="openWithdrawModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all">↑ Withdraw</button>
           </div>
         </div>
       </div>
@@ -305,7 +311,7 @@
       </div>
     </div>
 
-    <!-- BOTTOM FIXED NAVIGATION BAR (3 OPTIONS WITHOUT INVITE) -->
+    <!-- BOTTOM FIXED NAVIGATION BAR -->
     <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#0b0f19]/95 backdrop-blur-md border-t border-slate-800/80 py-3.5 px-8 flex justify-around items-center z-40 shadow-2xl">
       <button onclick="switchMainView('games')" id="nav-games" class="flex flex-col items-center text-emerald-400 font-bold text-xs gap-0.5 transition-all">
         <span class="text-base">🎮</span>
@@ -469,7 +475,8 @@
   <!-- WITHDRAW MODAL -->
   <div id="withdrawModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
     <div class="bg-[#0b0f19] w-full max-w-sm p-6 rounded-[28px] space-y-3.5 border border-slate-800 max-h-[90vh] overflow-y-auto shadow-2xl animate-pop">
-      <h3 class="font-black text-amber-400 text-center text-base">↑ Withdraw Balance (3% Tax)</h3>
+      <h3 class="font-black text-amber-400 text-center text-base">↑ Withdraw Winning Balance (3% Tax)</h3>
+      <p class="text-[11px] text-slate-400 text-center">Available Winning: ₹<span id="modalWinningBalText">0.00</span></p>
       
       <div class="grid grid-cols-2 bg-[#05070d] p-1 rounded-xl text-xs font-bold border border-slate-800">
         <button type="button" onclick="switchWithdrawMethod('bank')" id="withMethodBankBtn" class="py-2 rounded-lg bg-amber-600 text-slate-950 shadow transition-all">Bank Account</button>
@@ -527,6 +534,13 @@
       document.getElementById('withMethodUpiBtn').className = method === 'upi' ? 'py-2 rounded-lg bg-amber-600 text-slate-950 shadow transition-all' : 'py-2 rounded-lg text-slate-400 hover:text-white transition-all';
       document.getElementById('withdrawBankFields').classList.toggle('hidden', method !== 'bank');
       document.getElementById('withdrawUpiFields').classList.toggle('hidden', method !== 'upi');
+    }
+
+    function openWithdrawModal() {
+      if (currentUser) {
+        document.getElementById('modalWinningBalText').innerText = (currentUser.winningBalance || 0).toFixed(2);
+      }
+      document.getElementById('withdrawModal').classList.remove('hidden');
     }
 
     function switchMainView(view) {
@@ -803,10 +817,11 @@
 
     requestAnimationFrame(animateRocketCanvas);
 
-    function updateBalanceDisplay(newBal) {
-      if (!currentUser) return;
-      currentUser.balance = Math.max(0, +Number(newBal).toFixed(2));
-      document.getElementById('userBalance').innerText = currentUser.balance.toFixed(2);
+    function updateBalanceDisplay(user) {
+      if (!user) return;
+      document.getElementById('userBalance').innerText = (user.balance || 0).toFixed(2);
+      document.getElementById('userDepositBal').innerText = (user.depositBalance || 0).toFixed(2);
+      document.getElementById('userWinningBal').innerText = (user.winningBalance || 0).toFixed(2);
     }
 
     function switchAuthTab(tab) {
@@ -838,7 +853,7 @@
       document.getElementById('gameScreen').classList.remove('hidden');
       document.getElementById('userInfo').innerText = `${user.name} (${user.phone})`;
       document.getElementById('supportPhone').value = user.phone;
-      updateBalanceDisplay(user.balance);
+      updateBalanceDisplay(user);
       socket.emit('fetch_my_bets', { phone: user.phone });
       socket.emit('fetch_user_transactions', { phone: user.phone });
       socket.emit('fetch_user_tickets', { phone: user.phone });
@@ -875,7 +890,6 @@
     }
 
     socket.on('kismat_bet_confirmed', ({ balance, bet }) => {
-      updateBalanceDisplay(balance);
       alert(`Successfully placed ₹${bet.amount} on Kismat ${bet.choice}!`);
       socket.emit('fetch_my_bets', { phone: currentUser.phone });
     });
@@ -1040,7 +1054,6 @@
 
       if (rocketStateClient.status === 'WAITING' && !myRocketBet) {
         if (currentUser.balance < amt) return alert('Insufficient balance!');
-        updateBalanceDisplay(currentUser.balance - amt);
         myRocketBet = { amount: amt, cashedOut: false };
         socket.emit('rocket_place_bet', { phone: currentUser.phone, name: currentUser.name, amount: amt });
       }
@@ -1156,8 +1169,8 @@
 
     socket.on('user_sync', ({ user }) => {
       if (currentUser && user.phone === currentUser.phone) {
-        currentUser.balance = user.balance;
-        updateBalanceDisplay(user.balance);
+        currentUser = user;
+        updateBalanceDisplay(user);
       }
     });
 
@@ -1179,6 +1192,10 @@
     function sendWithdraw() {
       const amount = Number(document.getElementById('withAmount').value);
       if (!amount || amount < 30) return alert('Minimum withdrawal is ₹30!');
+
+      if (currentUser && amount > currentUser.winningBalance) {
+        return alert(`Apni kebal winning amount withdraw korte paren! Apnar available winning balance: ₹${currentUser.winningBalance}`);
+      }
 
       let accountDetails = '';
       if (currentWithdrawMethod === 'bank') {
