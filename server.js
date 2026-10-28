@@ -26,8 +26,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   secretCode: { type: String, default: '1234' },
   balance: { type: Number, default: 10 },
-  depositBalance: { type: Number, default: 10 }, // Deposit & bonus balance (Withdraw kora jabe na)
-  winningBalance: { type: Number, default: 0 },  // Winning balance (Withdraw kora jabe)
+  depositBalance: { type: Number, default: 10 },
+  winningBalance: { type: Number, default: 0 },
   checkInDay: { type: Number, default: 1 },
   lastCheckInDate: { type: String, default: '' }
 });
@@ -186,7 +186,7 @@ setInterval(async () => {
         b.winAmount = +(rawWin - tax).toFixed(3);
         b.status = 'WON';
       } else {
-        b.winAmount = 0;
+        b.winAmount = b.amount; // Loss amount
         b.status = 'LOST';
       }
 
@@ -259,7 +259,7 @@ setInterval(async () => {
         }
       } else {
         b.status = 'LOST';
-        b.winAmount = 0;
+        b.winAmount = b.amount;
       }
 
       await Bet.updateOne({ id: b.id }, { status: b.status, winAmount: b.winAmount }, { upsert: true });
@@ -323,8 +323,8 @@ setInterval(async () => {
       for (const rb of rocketBets) {
         if (!rb.cashedOut) {
           rb.status = 'LOST';
-          rb.winAmount = 0;
-          await Bet.updateOne({ id: rb.id }, { status: 'LOST', winAmount: 0 }, { upsert: true });
+          rb.winAmount = rb.amount;
+          await Bet.updateOne({ id: rb.id }, { status: 'LOST', winAmount: rb.amount }, { upsert: true });
         }
       }
 
@@ -475,7 +475,6 @@ io.on('connection', (socket) => {
         rewardAmount = Math.floor(Math.random() * 15) + 1;
       }
 
-      // Check-in reward can go to deposit balance or winning balance. Let's put it to deposit/bonus balance
       u.depositBalance = +(u.depositBalance + rewardAmount).toFixed(3);
       u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
       u.lastCheckInDate = todayStr;
@@ -653,7 +652,6 @@ io.on('connection', (socket) => {
     const amt = Number(amount);
     if (!u || amt < 10 || u.balance < amt) return;
 
-    // Deduct bet amount: First from winningBalance, then from depositBalance
     let rem = amt;
     if (u.winningBalance >= rem) {
       u.winningBalance -= rem;
@@ -828,7 +826,6 @@ io.on('connection', (socket) => {
     const requestedAmt = Number(amount);
     if (!u || requestedAmt < 30) return;
     
-    // Check if user is trying to withdraw more than their winning balance
     if (requestedAmt > u.winningBalance) {
       return socket.emit('auth_error', 'Apni kebal winning amount withdraw korte paren! Deposit balance withdraw kora jabe na.');
     }
