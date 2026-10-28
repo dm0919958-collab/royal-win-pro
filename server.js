@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   secretCode: { type: String, default: '1234' },
   balance: { type: Number, default: 10 },
+  depositBalance: { type: Number, default: 10 }, // Deposit & bonus balance (Withdraw kora jabe na)
+  winningBalance: { type: Number, default: 0 },  // Winning balance (Withdraw kora jabe)
   checkInDay: { type: Number, default: 1 },
   lastCheckInDate: { type: String, default: '' }
 });
@@ -131,7 +133,6 @@ async function loadDataFromDB() {
         instagram: savedLinks.instagram || ''
       };
     }
-    
     console.log(`✅ Loaded ${cachedUsers.size} users and social links from DB.[cite: 3]`);
   } catch (e) {
     console.log('Error loading DB:', e);
@@ -191,8 +192,9 @@ setInterval(async () => {
 
       if (won && cachedUsers.has(b.phone)) {
         const u = cachedUsers.get(b.phone);
-        u.balance = +(u.balance + b.winAmount).toFixed(3);
-        await User.updateOne({ phone: u.phone }, { balance: u.balance });
+        u.winningBalance = +(u.winningBalance + b.winAmount).toFixed(3);
+        u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+        await User.updateOne({ phone: u.phone }, { winningBalance: u.winningBalance, balance: u.balance });
         io.emit('user_sync', { user: u });
       }
 
@@ -250,8 +252,9 @@ setInterval(async () => {
         
         const u = cachedUsers.get(b.phone);
         if (u) {
-          u.balance = +(u.balance + b.winAmount).toFixed(3);
-          await User.updateOne({ phone: u.phone }, { balance: u.balance });
+          u.winningBalance = +(u.winningBalance + b.winAmount).toFixed(3);
+          u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+          await User.updateOne({ phone: u.phone }, { winningBalance: u.winningBalance, balance: u.balance });
           io.emit('user_sync', { user: u });
         }
       } else {
@@ -274,7 +277,7 @@ setInterval(async () => {
   io.emit('admin_update', await getAdminPayload());
 }, 1000);
 
-// Optimized Fast Rocket Game Loop
+// Rocket Game Loop
 setInterval(async () => {
   if (rocketState.status === 'WAITING') {
     rocketState.countdown = +(rocketState.countdown - 0.1).toFixed(1);
@@ -360,6 +363,8 @@ io.on('connection', (socket) => {
           password, 
           secretCode: secretCode || '1234', 
           balance: 10, 
+          depositBalance: 10,
+          winningBalance: 0,
           checkInDay: 1, 
           lastCheckInDate: ''
         };
@@ -421,7 +426,6 @@ io.on('connection', (socket) => {
         const diffDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
         
         if (diffDays === 1) {
-          // New day arrived, advance checkInDay safely
           u.checkInDay = (u.checkInDay || 1) + 1;
           if (u.checkInDay > 7) u.checkInDay = 1;
           await User.updateOne({ phone }, { checkInDay: u.checkInDay });
@@ -471,12 +475,14 @@ io.on('connection', (socket) => {
         rewardAmount = Math.floor(Math.random() * 15) + 1;
       }
 
-      u.balance = +(u.balance + rewardAmount).toFixed(3);
+      // Check-in reward can go to deposit balance or winning balance. Let's put it to deposit/bonus balance
+      u.depositBalance = +(u.depositBalance + rewardAmount).toFixed(3);
+      u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
       u.lastCheckInDate = todayStr;
-      // Note: We do NOT increment u.checkInDay here. It will advance automatically tomorrow when a new day starts.
 
       await User.updateOne({ phone }, { 
-        balance: u.balance, 
+        depositBalance: u.depositBalance,
+        balance: u.balance,
         lastCheckInDate: u.lastCheckInDate 
       });
 
@@ -570,8 +576,9 @@ io.on('connection', (socket) => {
       }
 
       allGiftCodes = await GiftCode.find({});
-      u.balance = +(u.balance + gift.amount).toFixed(3);
-      await User.updateOne({ phone }, { balance: u.balance });
+      u.depositBalance = +(u.depositBalance + gift.amount).toFixed(3);
+      u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+      await User.updateOne({ phone }, { depositBalance: u.depositBalance, balance: u.balance });
 
       socket.emit('user_sync', { user: u });
       socket.emit('gift_code_response', { success: true, message: `Successfully redeemed ₹${gift.amount}!`, amount: gift.amount });
@@ -646,8 +653,18 @@ io.on('connection', (socket) => {
     const amt = Number(amount);
     if (!u || amt < 10 || u.balance < amt) return;
 
-    u.balance = +(u.balance - amt).toFixed(3);
-    await User.updateOne({ phone }, { balance: u.balance });
+    // Deduct bet amount: First from winningBalance, then from depositBalance
+    let rem = amt;
+    if (u.winningBalance >= rem) {
+      u.winningBalance -= rem;
+      rem = 0;
+    } else {
+      rem -= u.winningBalance;
+      u.winningBalance = 0;
+      u.depositBalance -= rem;
+    }
+    u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+    await User.updateOne({ phone }, { depositBalance: u.depositBalance, winningBalance: u.winningBalance, balance: u.balance });
 
     const betData = { 
       id: Date.now(), 
@@ -684,8 +701,17 @@ io.on('connection', (socket) => {
       return socket.emit('auth_error', 'You can bet on only ONE option per round![cite: 3]');
     }
 
-    u.balance = +(u.balance - amt).toFixed(3);
-    await User.updateOne({ phone }, { balance: u.balance });
+    let rem = amt;
+    if (u.winningBalance >= rem) {
+      u.winningBalance -= rem;
+      rem = 0;
+    } else {
+      rem -= u.winningBalance;
+      u.winningBalance = 0;
+      u.depositBalance -= rem;
+    }
+    u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+    await User.updateOne({ phone }, { depositBalance: u.depositBalance, winningBalance: u.winningBalance, balance: u.balance });
 
     const betData = { 
       id: Date.now(), 
@@ -709,7 +735,6 @@ io.on('connection', (socket) => {
     io.emit('admin_update', await getAdminPayload());
   });
 
-  // HIGH PERFORMANCE FAST ROCKET BET
   socket.on('rocket_place_bet', async ({ phone, name, amount }) => {
     let u = cachedUsers.get(phone);
     if (!u) {
@@ -720,8 +745,17 @@ io.on('connection', (socket) => {
     if (!u || amt < 10 || u.balance < amt) return;
     if (rocketBets.find(b => b.phone === phone)) return;
 
-    u.balance = +(u.balance - amt).toFixed(3);
-    await User.updateOne({ phone }, { balance: u.balance });
+    let rem = amt;
+    if (u.winningBalance >= rem) {
+      u.winningBalance -= rem;
+      rem = 0;
+    } else {
+      rem -= u.winningBalance;
+      u.winningBalance = 0;
+      u.depositBalance -= rem;
+    }
+    u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+    await User.updateOne({ phone }, { depositBalance: u.depositBalance, winningBalance: u.winningBalance, balance: u.balance });
 
     const rBet = { 
       id: Date.now(), 
@@ -743,7 +777,6 @@ io.on('connection', (socket) => {
     io.emit('admin_update', await getAdminPayload());
   });
 
-  // HIGH PERFORMANCE FAST ROCKET CASHOUT
   socket.on('rocket_cashout', async ({ phone }) => {
     if (rocketState.status !== 'FLYING') return;
     const rBet = rocketBets.find(b => b.phone === phone && !b.cashedOut);
@@ -756,8 +789,9 @@ io.on('connection', (socket) => {
 
     const u = cachedUsers.get(phone);
     if (u) {
-      u.balance = +(u.balance + rBet.winAmount).toFixed(3);
-      await User.updateOne({ phone }, { balance: u.balance });
+      u.winningBalance = +(u.winningBalance + rBet.winAmount).toFixed(3);
+      u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+      await User.updateOne({ phone }, { winningBalance: u.winningBalance, balance: u.balance });
       socket.emit('user_sync', { user: u });
     }
 
@@ -793,12 +827,22 @@ io.on('connection', (socket) => {
     const u = cachedUsers.get(phone);
     const requestedAmt = Number(amount);
     if (!u || requestedAmt < 30) return;
+    
+    // Check if user is trying to withdraw more than their winning balance
+    if (requestedAmt > u.winningBalance) {
+      return socket.emit('auth_error', 'Apni kebal winning amount withdraw korte paren! Deposit balance withdraw kora jabe na.');
+    }
+
     const taxAmount = +(requestedAmt * 0.03).toFixed(2);
     const finalDeduct = +(requestedAmt + taxAmount).toFixed(2);
-    if (u.balance < finalDeduct) return;
+    
+    if (u.winningBalance < finalDeduct) {
+      return socket.emit('auth_error', 'Insufficient winning balance including tax!');
+    }
 
-    u.balance = +(u.balance - finalDeduct).toFixed(3);
-    await User.updateOne({ phone }, { balance: u.balance });
+    u.winningBalance = +(u.winningBalance - finalDeduct).toFixed(3);
+    u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+    await User.updateOne({ phone }, { winningBalance: u.winningBalance, balance: u.balance });
 
     const tx = { id: Date.now(), phone, userName: u.name, type: 'WITHDRAW', amount: requestedAmt, tax: taxAmount, totalDeducted: finalDeduct, details: `${account}`, status: 'PENDING', time: getISTTime() };
     await Transaction.create(tx);
@@ -835,7 +879,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ADMIN TRANSACTION APPROVAL / REJECTION & REFUND
   socket.on('admin_process_tx', async ({ txId, approve }) => {
     const tx = await Transaction.findOne({ id: txId });
     if (tx && tx.status === 'PENDING') {
@@ -850,14 +893,16 @@ io.on('connection', (socket) => {
 
       if (approve && tx.type === 'DEPOSIT') {
         if (u) {
-          u.balance = +(u.balance + tx.amount).toFixed(3);
-          await User.updateOne({ phone: u.phone }, { balance: u.balance });
+          u.depositBalance = +(u.depositBalance + tx.amount).toFixed(3);
+          u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+          await User.updateOne({ phone: u.phone }, { depositBalance: u.depositBalance, balance: u.balance });
           io.emit('user_sync', { user: u });
         }
       } else if (!approve && tx.type === 'WITHDRAW') {
         if (u) {
-          u.balance = +(u.balance + tx.totalDeducted).toFixed(3);
-          await User.updateOne({ phone: u.phone }, { balance: u.balance });
+          u.winningBalance = +(u.winningBalance + tx.totalDeducted).toFixed(3);
+          u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+          await User.updateOne({ phone: u.phone }, { winningBalance: u.winningBalance, balance: u.balance });
           io.emit('user_sync', { user: u });
         }
       }
@@ -867,7 +912,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // INSTANT DELETION HANDLERS FROM ADMIN PANEL
   socket.on('admin_delete_transaction', async (txId) => {
     try {
       await Transaction.deleteOne({ id: txId });
@@ -933,8 +977,9 @@ io.on('connection', (socket) => {
   socket.on('admin_custom_balance', async ({ phone, amount }) => {
     const u = cachedUsers.get(phone);
     if (u) {
-      u.balance = Number(amount);
-      await User.updateOne({ phone }, { balance: u.balance });
+      u.depositBalance = Number(amount);
+      u.balance = +(u.depositBalance + u.winningBalance).toFixed(3);
+      await User.updateOne({ phone }, { depositBalance: u.depositBalance, balance: u.balance });
       io.emit('user_sync', { user: u });
       io.emit('admin_update', await getAdminPayload());
     }
