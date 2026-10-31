@@ -50,26 +50,36 @@
     }
   </script>
 
-  <!-- HEADER -->
+  <!-- HEADER STATS -->
   <header class="bg-gradient-to-r from-slate-900 via-[#0b101d] to-slate-900 border border-slate-800/80 rounded-[28px] p-6 flex flex-wrap justify-between items-center gap-4 shadow-2xl relative overflow-hidden">
     <div class="absolute -right-16 -top-16 w-48 h-48 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="relative z-10">
-      <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Master Backoffice v2.0</span>
+      <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Master Backoffice v2.1</span>
       <h1 class="text-2xl font-black text-white mt-1.5">ROYAL WIN PRO • CONTROL ENGINE</h1>
     </div>
+
+    <!-- METRICS CARDS (Total Deposit, Today Profit, Users, Timers) -->
     <div class="flex flex-wrap items-center gap-3 relative z-10">
+      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-emerald-500/40 text-center shadow-inner">
+        <span class="text-[9px] text-emerald-400 uppercase font-bold block">💰 Total Deposits</span>
+        <span id="adminTotalDeposit" class="font-mono text-base font-black text-emerald-400">₹0</span>
+      </div>
+
+      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-indigo-500/40 text-center shadow-inner">
+        <span class="text-[9px] text-indigo-300 uppercase font-bold block">📈 Today's Net Profit</span>
+        <span id="adminTodayProfit" class="font-mono text-base font-black text-indigo-400">₹0</span>
+      </div>
+
       <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-slate-800 text-center shadow-inner">
         <span class="text-[9px] text-slate-400 uppercase font-bold block">Total Users</span>
-        <span id="totalUsers" class="font-mono text-base font-black text-emerald-400">0</span>
+        <span id="totalUsers" class="font-mono text-base font-black text-slate-200">0</span>
       </div>
-      <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-slate-800 text-center shadow-inner">
-        <span class="text-[9px] text-slate-400 uppercase font-bold block">Colour Period</span>
-        <span id="adminPeriod" class="font-mono text-sm font-bold text-indigo-400">--</span>
-      </div>
+      
       <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-slate-800 text-center shadow-inner">
         <span class="text-[9px] text-slate-400 uppercase font-bold block">Colour Timer</span>
         <span id="adminTimer" class="font-mono text-base font-black text-amber-400">00:30</span>
       </div>
+
       <div class="bg-[#03050a] px-3.5 py-2.5 rounded-2xl border border-amber-500/30 text-center shadow-inner">
         <span class="text-[9px] text-amber-400 uppercase font-bold block">✨ Kismat Timer</span>
         <span id="adminKismatTimer" class="font-mono text-base font-black text-amber-400">02:30</span>
@@ -138,9 +148,9 @@
     </div>
   </div>
 
-  <!-- KISMAT GAME CONTROL PANEL -->
+  <!-- KISMAT GAME CONTROL PANEL (1 TO 10 CARDS) -->
   <div class="bg-slate-900/90 border border-amber-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
-    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+    <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
       <div>
         <h2 class="text-sm font-black text-amber-400 uppercase tracking-wider">✨ KISMAT Game Live Control & Bets</h2>
         <p class="text-xs text-slate-400 mt-0.5">Kismat Period: <strong class="text-indigo-300 font-mono" id="adminKismatPeriod">--</strong></p>
@@ -173,7 +183,7 @@
           <button onclick="setCustomRocketX()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Set X</button>
         </div>
       </div>
-      <p id="nextRocketBanner" class="text-xs font-bold text-amber-400">Next Flight Mode: Auto / Random</p>
+      <p id="nextRocketBanner" class="text-xs font-bold text-amber-400">Next Flight Mode: Auto Protected / Random</p>
     </div>
 
     <div class="bg-slate-900/90 border border-rose-500/20 rounded-[28px] p-6 space-y-3 flex flex-col shadow-xl">
@@ -191,8 +201,15 @@
         <h2 class="text-base font-black text-white uppercase tracking-wider">🎨 Colour Trading Result Control Engine</h2>
         <p class="text-xs text-slate-400 mt-0.5">Click any colour or exact number below to force it as the winner.</p>
       </div>
-      <div id="winnerBanner" class="bg-amber-500/20 border border-amber-400 text-amber-300 px-4 py-2 rounded-xl text-sm font-black">
-        Current Mode: Auto Profit
+
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-950/80 border border-indigo-500/40 px-4 py-1.5 rounded-xl text-center shadow-inner">
+          <span class="text-[9px] uppercase font-bold text-indigo-300 block">Total Colour Bet (Round)</span>
+          <span id="adminColourLiveBet" class="font-mono text-emerald-400 font-black text-base">₹0</span>
+        </div>
+        <div id="winnerBanner" class="bg-amber-500/20 border border-amber-400 text-amber-300 px-4 py-2 rounded-xl text-sm font-black">
+          Current Mode: Auto Profit
+        </div>
       </div>
     </div>
 
@@ -231,7 +248,7 @@
     <div id="numberGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
   </div>
 
-  <!-- DEPOSIT & WITHDRAW REQUESTS WITH DELETE BUTTONS -->
+  <!-- DEPOSIT & WITHDRAW REQUESTS -->
   <div class="space-y-6">
     <div class="bg-slate-900/90 border border-emerald-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
       <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
@@ -250,7 +267,7 @@
     </div>
   </div>
 
-  <!-- SUPPORT TICKETS WITH DELETE BUTTONS -->
+  <!-- SUPPORT TICKETS -->
   <div class="bg-slate-900/90 border border-amber-500/30 rounded-[28px] p-6 space-y-4 shadow-xl">
     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
       <h2 class="text-sm font-black text-amber-400 uppercase tracking-wider">💬 User Support Tickets</h2>
@@ -432,10 +449,23 @@
       }
     });
 
-    socket.on('admin_update', ({ gameState, kismatState, rocketState, summary, transactions, supportTickets, usersList, totalRocketPool, totalRocketClaimed, giftCodes, socialLinks, depositConditionActive }) => {
+    socket.on('admin_update', ({ gameState, kismatState, rocketState, summary, transactions, supportTickets, usersList, totalRocketPool, totalRocketClaimed, giftCodes, socialLinks, depositConditionActive, totalApprovedDeposit, todayProfit, colourLiveTotalBet }) => {
       cachedUsers = usersList || [];
       cachedTransactions = transactions || [];
       cachedGiftCodes = giftCodes || [];
+
+      // Financial Stats Render
+      if (totalApprovedDeposit !== undefined) {
+        document.getElementById('adminTotalDeposit').innerText = `₹${totalApprovedDeposit}`;
+      }
+      if (todayProfit !== undefined) {
+        const el = document.getElementById('adminTodayProfit');
+        el.innerText = `₹${todayProfit}`;
+        el.className = todayProfit >= 0 ? "font-mono text-base font-black text-emerald-400" : "font-mono text-base font-black text-rose-400";
+      }
+      if (colourLiveTotalBet !== undefined) {
+        document.getElementById('adminColourLiveBet').innerText = `₹${colourLiveTotalBet}`;
+      }
 
       if (socialLinks) {
         document.getElementById('adminTelegramInput').value = socialLinks.telegram || '';
@@ -488,12 +518,18 @@
       document.getElementById('mode-MIN_PAYOUT').className = gameState.mode === 'MIN_PAYOUT' ? 'py-3 px-3 rounded-xl text-xs font-bold border border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'py-3 px-3 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800';
       document.getElementById('mode-MANUAL').className = gameState.mode === 'MANUAL' ? 'py-3 px-3 rounded-xl text-xs font-bold border border-rose-500 bg-rose-500/20 text-rose-300' : 'py-3 px-3 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800';
 
+      // Kismat Options Grid Render
       if (kismatState) {
-        document.getElementById('adminKismatPeriod').innerText = kismatState.period;
+        document.getElementById('adminKismatPeriod').innerText = kismatState.period || '--';
         let kGrid = '';
         for (let i = 1; i <= 10; i++) {
-          const stake = kismatState.stakes ? (kismatState.stakes[i] || 0) : 0;
-          kGrid += `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center"><span class="text-sm font-black text-amber-400">Opt #${i}</span><p class="text-xs text-slate-300 mt-1">₹${stake}</p></div>`;
+          const stake = (kismatState.stakes && kismatState.stakes[i] !== undefined) ? kismatState.stakes[i] : 0;
+          kGrid += `
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
+              <span class="text-sm font-black text-amber-400">Card ${i}</span>
+              <p class="text-xs text-slate-300 mt-1 font-mono">₹${stake}</p>
+            </div>
+          `;
         }
         document.getElementById('adminKismatOptionsGrid').innerHTML = kGrid;
       }
