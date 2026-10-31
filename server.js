@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname)));
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/royalwin";
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB Atlas successfully![cite: 3]'))
+  .then(() => console.log('✅ Connected to MongoDB Atlas successfully!'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 const userSchema = new mongoose.Schema({
@@ -133,7 +133,7 @@ async function loadDataFromDB() {
         instagram: savedLinks.instagram || ''
       };
     }
-    console.log(`✅ Loaded ${cachedUsers.size} users and social links from DB.[cite: 3]`);
+    console.log(`✅ Loaded ${cachedUsers.size} users and social links from DB.`);
   } catch (e) {
     console.log('Error loading DB:', e);
   }
@@ -186,7 +186,7 @@ setInterval(async () => {
         b.winAmount = +(rawWin - tax).toFixed(3);
         b.status = 'WON';
       } else {
-        b.winAmount = b.amount; // Loss amount
+        b.winAmount = b.amount;
         b.status = 'LOST';
       }
 
@@ -277,7 +277,7 @@ setInterval(async () => {
   io.emit('admin_update', await getAdminPayload());
 }, 1000);
 
-// Rocket Game Loop
+// Rocket Game Loop (Keu bet na lagale Full Random, Bet thakle 100% No-Loss Engine)
 setInterval(async () => {
   if (rocketState.status === 'WAITING') {
     rocketState.countdown = +(rocketState.countdown - 0.1).toFixed(1);
@@ -286,25 +286,34 @@ setInterval(async () => {
       rocketState.multiplier = 1.00;
 
       let totalPool = rocketServiceTotalPool();
-      let maxBet = rocketBets.length > 0 ? Math.max(...rocketBets.map(b => b.amount)) : 0;
 
       if (rocketState.forcedNextCrash !== null) {
         rocketState.crashPoint = rocketState.forcedNextCrash;
         rocketState.forcedNextCrash = null;
-      } else if (totalPool >= 1000) {
-        let targetProfitMultiplier = +(1 + 0.80).toFixed(2);
-        rocketState.crashPoint = +(targetProfitMultiplier + (Math.random() * 0.15)).toFixed(2);
-      } else if (rocketBets.length === 0) {
-        let highChance = Math.random() < 0.20;
-        if (highChance) {
-          rocketState.crashPoint = +(100 + Math.random() * 400).toFixed(2);
+      } 
+      // Jokhon kono user bet korbe na: Real Random (1.1x theke 200x+)
+      else if (rocketBets.length === 0) {
+        let rVal = Math.random();
+        if (rVal < 0.40) {
+          rocketState.crashPoint = +(1.15 + Math.random() * 2.5).toFixed(2);
+        } else if (rVal < 0.75) {
+          rocketState.crashPoint = +(3.5 + Math.random() * 12).toFixed(2);
+        } else if (rVal < 0.92) {
+          rocketState.crashPoint = +(15 + Math.random() * 45).toFixed(2);
         } else {
-          rocketState.crashPoint = +(5 + Math.random() * 90).toFixed(2);
+          rocketState.crashPoint = +(60 + Math.random() * 200).toFixed(2);
         }
-      } else if (maxBet <= 100) {
-        rocketState.crashPoint = +(1.05 + Math.random() * 0.90).toFixed(2);
-      } else {
-        rocketState.crashPoint = +(1.05 + Math.random() * 1.90).toFixed(2);
+      } 
+      // Jokhon bet thakbe: Admin Loss-Prevention System
+      else {
+        let maxBet = Math.max(...rocketBets.map(b => b.amount));
+        if (totalPool > 0) {
+          let maxSafePayoutMult = totalPool / (maxBet * 1.35);
+          maxSafePayoutMult = Math.max(1.10, Math.min(maxSafePayoutMult, 2.50));
+          rocketState.crashPoint = +(maxSafePayoutMult + (Math.random() * 0.15 - 0.05)).toFixed(2);
+        } else {
+          rocketState.crashPoint = +(1.10 + Math.random() * 0.30).toFixed(2);
+        }
       }
     }
   } else if (rocketState.status === 'FLYING') {
@@ -314,6 +323,20 @@ setInterval(async () => {
     if (rocketState.multiplier > 50) increment = 0.55;
 
     rocketState.multiplier = +(rocketState.multiplier + increment).toFixed(2);
+
+    // Dynamic Live Protection: Flight cholakalin jodi payout pool cross korte chay tokhon auto crash
+    if (rocketBets.length > 0) {
+      let activeLiability = 0;
+      for (const b of rocketBets) {
+        if (!b.cashedOut) {
+          activeLiability += b.amount * rocketState.multiplier;
+        }
+      }
+      let pool = rocketServiceTotalPool();
+      if (activeLiability > pool * 0.85 && rocketState.multiplier > 1.20) {
+        rocketState.crashPoint = rocketState.multiplier;
+      }
+    }
 
     if (rocketState.multiplier >= rocketState.crashPoint) {
       rocketState.status = 'CRASHED';
@@ -353,7 +376,7 @@ io.on('connection', (socket) => {
     try {
       let existingUser = await User.findOne({ phone });
       if (existingUser || cachedUsers.has(phone)) {
-        socket.emit('auth_error', 'Phone number already registered![cite: 3]');
+        socket.emit('auth_error', 'Phone number already registered!');
       } else {
         const userId = 'USR' + Math.floor(1000 + Math.random() * 9000);
         const newUser = { 
@@ -375,16 +398,16 @@ io.on('connection', (socket) => {
         io.emit('admin_update', await getAdminPayload());
       }
     } catch (err) {
-      socket.emit('auth_error', 'Registration failed![cite: 3]');
+      socket.emit('auth_error', 'Registration failed!');
     }
   });
 
   socket.on('user_login', ({ phone, password }) => {
     const user = cachedUsers.get(phone);
     if (!user) {
-      socket.emit('auth_error', 'Account not found![cite: 3]');
+      socket.emit('auth_error', 'Account not found!');
     } else if (user.password !== password) {
-      socket.emit('auth_error', 'Invalid password![cite: 3]');
+      socket.emit('auth_error', 'Invalid password!');
     } else {
       socket.emit('auth_success', { user });
     }
@@ -622,7 +645,6 @@ io.on('connection', (socket) => {
 
   socket.on('admin_update_socials', async (links) => {
     currentSocialLinks = links || {};
-    
     await SocialLink.findOneAndUpdate(
       { key: 'main_links' },
       { 
@@ -632,7 +654,6 @@ io.on('connection', (socket) => {
       },
       { upsert: true, new: true }
     );
-
     io.emit('social_links_sync', currentSocialLinks);
     io.emit('admin_update', await getAdminPayload());
   });
@@ -696,7 +717,7 @@ io.on('connection', (socket) => {
     if (!u || u.balance < amt) return;
 
     if (currentKismatBets.find(b => b.phone === phone)) {
-      return socket.emit('auth_error', 'You can bet on only ONE option per round![cite: 3]');
+      return socket.emit('auth_error', 'You can bet on only ONE option per round!');
     }
 
     let rem = amt;
@@ -862,7 +883,6 @@ io.on('connection', (socket) => {
     const ticket = { id: Date.now(), phone, userName: name || phone, message, adminReply: '', status: 'PENDING', time: getISTTime() };
     await SupportTicket.create(ticket);
     allSupportTickets.unshift(ticket);
-    
     io.emit('admin_update', await getAdminPayload());
     socket.emit('support_tickets_response', allSupportTickets.filter(t => t.phone === phone));
   });
@@ -925,19 +945,19 @@ io.on('connection', (socket) => {
     } catch (e) {}
   });
 
-  socket.on('admin_set_mode', (mode) => {
+  socket.on('admin_set_mode', async (mode) => {
     gameState.mode = mode;
     if (mode === 'MIN_PAYOUT') gameState.forcedNumber = null;
-    io.emit('admin_update', getAdminPayloadSync());
+    io.emit('admin_update', await getAdminPayload());
   });
 
-  socket.on('admin_force_num', (num) => {
+  socket.on('admin_force_num', async (num) => {
     gameState.mode = 'MANUAL';
     gameState.forcedNumber = Number(num);
-    io.emit('admin_update', getAdminPayloadSync());
+    io.emit('admin_update', await getAdminPayload());
   });
 
-  socket.on('admin_force_colour', (col) => {
+  socket.on('admin_force_colour', async (col) => {
     gameState.mode = 'MANUAL';
     let matching = [];
     for (let n = 0; n <= 9; n++) {
@@ -947,7 +967,7 @@ io.on('connection', (socket) => {
     if (matching.length > 0) {
       gameState.forcedNumber = matching[Math.floor(Math.random() * matching.length)];
     }
-    io.emit('admin_update', getAdminPayloadSync());
+    io.emit('admin_update', await getAdminPayload());
   });
 
   socket.on('admin_force_kismat', (opt) => {
@@ -960,9 +980,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('admin_rocket_set_next', (val) => {
+  socket.on('admin_rocket_set_next', async (val) => {
     rocketState.forcedNextCrash = Number(val);
-    io.emit('admin_update', getAdminPayloadSync());
+    io.emit('admin_update', await getAdminPayload());
   });
 
   socket.on('admin_delete_user', async (phone) => {
@@ -1006,6 +1026,35 @@ io.on('connection', (socket) => {
   socket.on('admin_init', async () => socket.emit('admin_update', await getAdminPayload()));
 });
 
+// Admin Stats Helper (Total Deposit, Today's Profit, Colour Live Bet)
+async function getAdminFinancialStats() {
+  const depositTxs = await Transaction.find({ type: 'DEPOSIT', status: 'APPROVED' });
+  const totalApprovedDeposit = depositTxs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  const colourLiveTotalBet = currentRoundBets.reduce((sum, b) => sum + (b.amount || 0), 0);
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const todayBets = await Bet.find({ id: { $gte: startOfDay.getTime() } });
+  let todayTotalBet = 0;
+  let todayTotalPayout = 0;
+
+  todayBets.forEach(b => {
+    todayTotalBet += b.amount || 0;
+    if (b.status === 'WON') {
+      todayTotalPayout += b.winAmount || 0;
+    }
+  });
+
+  const todayProfit = +(todayTotalBet - todayTotalPayout).toFixed(2);
+
+  return {
+    totalApprovedDeposit: +totalApprovedDeposit.toFixed(2),
+    colourLiveTotalBet: +colourLiveTotalBet.toFixed(2),
+    todayProfit: todayProfit
+  };
+}
+
 async function getAdminPayload() {
   let stakes = { GREEN: 0, VIOLET: 0, RED: 0 };
   let projectedPayouts = {};
@@ -1022,6 +1071,8 @@ async function getAdminPayload() {
   let totalRocketPool = rocketServiceTotalPool();
   let totalRocketClaimed = rocketBets.reduce((acc, b) => acc + (b.cashedOut ? (b.winAmount || 0) : 0), 0);
 
+  const finStats = await getAdminFinancialStats();
+
   return {
     gameState,
     kismatState: { period: kismatState.period, timeLeft: kismatState.timeLeft, stakes: kStakes },
@@ -1036,26 +1087,10 @@ async function getAdminPayload() {
     totalRocketClaimed: +totalRocketClaimed.toFixed(2),
     giftCodes: allGiftCodes,
     socialLinks: currentSocialLinks,
-    depositConditionActive: global.requireDepositForGift || false
-  };
-}
-
-function getAdminPayloadSync() {
-  let totalRocketClaimed = rocketBets.reduce((acc, b) => acc + (b.cashedOut ? (b.winAmount || 0) : 0), 0);
-  return {
-    gameState,
-    kismatState: { period: kismatState.period, timeLeft: kismatState.timeLeft },
-    rocketState,
-    supportTickets: allSupportTickets,
-    usersList: Array.from(cachedUsers.values()).reverse(),
-    transactions: allTransactions,
-    currentBets: currentRoundBets,
-    rocketBets,
-    totalRocketPool: rocketServiceTotalPool(),
-    totalRocketClaimed: +totalRocketClaimed.toFixed(2),
-    giftCodes: allGiftCodes,
-    socialLinks: currentSocialLinks,
-    depositConditionActive: global.requireDepositForGift || false
+    depositConditionActive: global.requireDepositForGift || false,
+    totalApprovedDeposit: finStats.totalApprovedDeposit,
+    todayProfit: finStats.todayProfit,
+    colourLiveTotalBet: finStats.colourLiveTotalBet
   };
 }
 
@@ -1065,5 +1100,5 @@ function rocketServiceTotalPool() {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log('✅ Server running on port ' + PORT + '[cite: 3]');
+  console.log('✅ Server running on port ' + PORT);
 });
